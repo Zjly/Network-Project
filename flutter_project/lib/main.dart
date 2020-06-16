@@ -1,4 +1,6 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_project/Toast.dart';
 
 void main() => runApp(Login());
 
@@ -13,22 +15,7 @@ class _Login extends State<Login> {
   String userName;
   String password;
   bool isShowPassWord = false;
-
-  void login() {
-    //读取当前的Form状态
-    var loginForm = loginKey.currentState;
-    //验证Form表单
-    if (loginForm.validate()) {
-      loginForm.save();
-      print('userName: ' + userName + ' password: ' + password);
-    }
-  }
-
-  void showPassWord() {
-    setState(() {
-      isShowPassWord = !isShowPassWord;
-    });
-  }
+  String token;
 
   @override
   Widget build(BuildContext context) {
@@ -69,8 +56,7 @@ class _Login extends State<Login> {
                         onSaved: (value) {
                           userName = value;
                         },
-                        validator: (phone) {
-                        },
+                        validator: (phone) {},
                         onFieldSubmitted: (value) {},
                       ),
                     ),
@@ -82,12 +68,12 @@ class _Login extends State<Login> {
                                   width: 1.0))),
                       child: new TextFormField(
                         decoration: new InputDecoration(
-                            labelText: '密码',
-                            labelStyle: new TextStyle(
-                                fontSize: 20.0,
-                                color: Color.fromARGB(255, 93, 93, 93)),
-                            border: InputBorder.none,
-                            ),
+                          labelText: '密码',
+                          labelStyle: new TextStyle(
+                              fontSize: 20.0,
+                              color: Color.fromARGB(255, 93, 93, 93)),
+                          border: InputBorder.none,
+                        ),
                         obscureText: !isShowPassWord,
                         onSaved: (value) {
                           password = value;
@@ -117,7 +103,7 @@ class _Login extends State<Login> {
                       margin: EdgeInsets.only(top: 40.0),
                       child: new SizedBox.expand(
                         child: new RaisedButton(
-                          onPressed: login,
+                          onPressed: authority,
                           color: Color.fromARGB(255, 127, 255, 212),
                           child: new Text(
                             '微服务权限',
@@ -139,4 +125,56 @@ class _Login extends State<Login> {
       ),
     );
   }
+
+  void login() {
+    //读取当前的Form状态
+    var loginForm = loginKey.currentState;
+    //验证Form表单
+    if (loginForm.validate()) {
+      loginForm.save();
+      print('userName: ' + userName + ' password: ' + password);
+
+      String url = "http://127.0.0.1:8080/api/login";
+
+      Future<String> token = tokenStorage.getString();
+      token.then((String token) {
+        HTTPClient httpGet = new HTTPClient(token);
+        httpGet.setServiceType(serviceType);
+        Future<Response> response =
+        httpGet.doGet(url);
+        response.then((Response response) {
+          ResBody resBody = ResBody.fromJson(response.data);
+          if (resBody.statuscode == "login") {
+            showDialog<Null>(
+              context: context,
+              barrierDismissible: false,
+              builder: (BuildContext context) {
+                return new AlertDialog(
+                  title: new Text('提示'),
+                  content: new SingleChildScrollView(
+                    child: new ListBody(
+                      children: <Widget>[new Text('登录成功')],
+                    ),
+                  ),
+                  actions: <Widget>[
+                    new FlatButton(
+                      child: new Text('确定'),
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                        Navigator.push(context,
+                            MaterialPageRoute(builder: (context) {
+                              return Signin();
+                            }));
+                      },
+                    ),
+                  ],
+                );
+              },
+            ).then((val) {});
+          }
+        }
+      }
+    }
+  }
 }
+
